@@ -8,11 +8,11 @@
 <body>
     <h1>Your Design</h1>
 
-    {% if filepath %}
-<!-- Add this to display.html -->
-<img src="{{ url_for('uploaded_file', filename=os.path.basename(filepath)) }}" alt="Saved Design">
+    {% if canvas_content %}
+    <p>Here is your saved design:</p>
+    <img src="{{ url_for('display_image', filename=canvas_content) }}" alt="Saved Design">
     {% else %}
-        <p>No design available.</p>
+    <p>No saved design available yet.</p>
     {% endif %}
 </body>
 </html>

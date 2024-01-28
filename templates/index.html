@@ -148,10 +148,12 @@
     </div>
 
     <div class="button-container">
-        <button onclick="saveCustomDesign()">Save Custom Design</button>
+        <button onclick="saveCustomDesign()" type="button">Save Custom Design</button>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/dragula/dist/dragula.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dom-to-image/2.6.0/dom-to-image.min.js"></script>
+
 
     <script>
         let selectedDesign;
@@ -170,47 +172,53 @@
         }
 
         function saveCustomDesign() {
-            const tshirt = document.getElementById('tshirt');
+    const tshirtContainer = document.getElementById('container');
+    const tshirtCanvas = document.getElementById('canvas-container');
 
-            // Check if 'tshirt' is a canvas element
-            if (!(tshirt instanceof HTMLCanvasElement)) {
-                console.error('The "tshirt" element is not a canvas.');
-                return;
-            }
+    // Calculate the central area excluding the colors section and designs
+    const canvasRect = tshirtCanvas.getBoundingClientRect();
+    const colorsSectionWidth = document.getElementById('color-options').offsetWidth;
+    const designsSectionWidth = document.getElementById('design-container').offsetWidth;
 
-            const canvas = tshirt;
-            const context = canvas.getContext('2d');
+    const centralArea = {
+        left: canvasRect.left + colorsSectionWidth,
+        top: canvasRect.top,
+        width: canvasRect.width - colorsSectionWidth - designsSectionWidth,
+        height: canvasRect.height,
+    };
 
-            const tempCanvas = document.createElement('canvas');
-            tempCanvas.width = canvas.width;
-            tempCanvas.height = canvas.height;
-            const tempContext = tempCanvas.getContext('2d');
-            tempContext.drawImage(canvas, 0, 0);
-
-            // Get the data URL of the new canvas
-            const dataUrl = tempCanvas.toDataURL('image/png');
-
+    // Use dom-to-image to capture the central area within the container
+    domtoimage.toPng(tshirtContainer, centralArea)
+        .then(dataUrl => {
             // Send dataUrl to the server using Fetch API
-            fetch('/save', {
+            fetch('/save_canvas', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    canvas_content: dataUrl,  // Send the canvas content as JSON
-                    shirt_color: 'YourSelectedShirtColor',  // Replace with the actual selected color
-                    design_image_path: 'YourSelectedDesignImagePath'  // Replace with the actual selected design path
+                    canvas_content: dataUrl,
                 }),
             })
-                .then(response => response.json())
-                .then(data => {
-                    console.log('Server response:', data);
-                    // Optionally handle the response from the server
-                })
-                .catch(error => {
-                    console.error('Error sending data to the server:', error);
-                });
-        }
+            .then(response => response.json())
+            .then(data => {
+                console.log('Server response:', data);
+                // Optionally handle the response from the server
+
+                // Redirect
+                window.location.href = `/display/${data.filename}`;
+            })
+            .catch(error => {
+                console.error('Error sending data to the server:', error);
+            });
+        })
+        .catch(error => {
+            console.error('Error capturing canvas content:', error);
+        });
+}
+
+
+
 
         document.addEventListener("DOMContentLoaded", function () {
             const designContainer = document.getElementById('design-container');
