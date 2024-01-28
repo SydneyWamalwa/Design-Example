@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Display Page</title>
+</head>
+<body>
+    <h1>Your Design</h1>
+
+    {% if filepath %}
+<!-- Add this to display.html -->
+<img src="{{ url_for('uploaded_file', filename=os.path.basename(filepath)) }}" alt="Saved Design">
+    {% else %}
+        <p>No design available.</p>
+    {% endif %}
+</body>
+</html>

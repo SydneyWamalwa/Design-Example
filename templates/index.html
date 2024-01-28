@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>T-Shirt Designer</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/dragula/dist/dragula.css" />
+    <script src="https://cdn.jsdelivr.net/npm/interactjs/dist/interact.js"></script>
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Arial', sans-serif;
+            background-color: #f8f8f8;
+        }
+
+        #container {
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            gap: 20px;
+            padding: 20px;
+            background-color: #fff;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+            margin: 20px;
+        }
+
+        #color-options {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .color-option {
+            width: 60px;
+            height: 60px;
+            cursor: pointer;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid #fff;
+            overflow: hidden;
+            transition: transform 0.3s ease-in-out;
+        }
+
+        .color-option:hover {
+            transform: scale(1.1);
+        }
+
+        #canvas-container {
+            position: relative;
+            width: 60%;
+            height: 500px;
+            border: 1px solid #ccc;
+            overflow: hidden;
+        }
+
+        #tshirt {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-size: contain;
+            background-repeat: no-repeat;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .design-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+        }
+
+        .design-container {
+            /* Styles for the design container */
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+        }
+
+        .design {
+            width: 100px;
+            height: 100px;
+            margin-bottom: 10px;
+            box-sizing: content-box;
+        }
+
+        .context-menu {
+            display: none;
+            position: absolute;
+            background-color: #fff;
+            border: 1px solid #ccc;
+            padding: 5px;
+            z-index: 1000;
+        }
+
+        .button-container {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        button {
+            background-color: #4caf50;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: background-color 0.3s ease-in-out;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <div id="color-options">
+            <button onclick="changeShirtColor('/static/images/wt.jpeg', 'White')"><img src="/static/images/wt.jpeg" alt="White T-Shirt" width="60px" height="60px"></button>
+            <button onclick="changeShirtColor('/static/images/blt.jpeg', 'Black')"><img src="/static/images/blt.jpeg" alt="Black T-Shirt" width="60px" height="60px"></button>
+            <!-- Add more color options as needed -->
+        </div>
+
+        <div id="canvas-container">
+            <canvas id="tshirt" width="500" height="500"></canvas>
+        </div>
+
+        <div class="design-section">
+            <h2>Designs</h2>
+            <div class="design-container" id="design-container">
+                <!-- Add drag-and-drop designs here -->
+                <img class="design" src="/static/images/d1.jpeg" alt="Design 1" width="100px" height="100px">
+                <img class="design" src="/static/images/d2.jpg" alt="Design 2" width="100px" height="100px">
+            </div>
+        </div>
+    </div>
+
+    <div class="button-container">
+        <button onclick="saveCustomDesign()">Save Custom Design</button>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/dragula/dist/dragula.js"></script>
+
+    <script>
+        let selectedDesign;
+        const resizeFactor = 1.1; // Adjust the resizing factor as needed
+
+        function changeShirtColor(imagePath, colorLabel) {
+            const tshirt = document.getElementById("tshirt");
+
+            if (imagePath && imagePath.trim() !== '' && colorLabel && colorLabel.trim() !== '') {
+                tshirt.style.backgroundImage = `url('${imagePath}')`;
+            } else {
+                console.error('Invalid image path or color label:', imagePath, colorLabel);
+                tshirt.style.backgroundImage = "url('/static/images/wt.jpeg')";
+                tshirt.style.backgroundColor = '#ffffff';
+            }
+        }
+
+        function saveCustomDesign() {
+            const tshirt = document.getElementById('tshirt');
+
+            // Check if 'tshirt' is a canvas element
+            if (!(tshirt instanceof HTMLCanvasElement)) {
+                console.error('The "tshirt" element is not a canvas.');
+                return;
+            }
+
+            const canvas = tshirt;
+            const context = canvas.getContext('2d');
+
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = canvas.width;
+            tempCanvas.height = canvas.height;
+            const tempContext = tempCanvas.getContext('2d');
+            tempContext.drawImage(canvas, 0, 0);
+
+            // Get the data URL of the new canvas
+            const dataUrl = tempCanvas.toDataURL('image/png');
+
+            // Send dataUrl to the server using Fetch API
+            fetch('/save', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    canvas_content: dataUrl,  // Send the canvas content as JSON
+                    shirt_color: 'YourSelectedShirtColor',  // Replace with the actual selected color
+                    design_image_path: 'YourSelectedDesignImagePath'  // Replace with the actual selected design path
+                }),
+            })
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Server response:', data);
+                    // Optionally handle the response from the server
+                })
+                .catch(error => {
+                    console.error('Error sending data to the server:', error);
+                });
+        }
+
+        document.addEventListener("DOMContentLoaded", function () {
+            const designContainer = document.getElementById('design-container');
+            const tshirt = document.getElementById('tshirt');
+            const tshirtContainer = document.getElementById('canvas-container');
+
+            // Add drag and drop events for designs
+            designContainer.addEventListener('dragstart', function (event) {
+                event.dataTransfer.setData('text/plain', ''); // Required for Firefox
+                selectedDesign = event.target;
+            });
+
+            tshirtContainer.addEventListener('dragover', function (event) {
+                event.preventDefault();
+            });
+
+            tshirtContainer.addEventListener('drop', function (event) {
+                event.preventDefault();
+
+                if (selectedDesign) {
+                    // Get the bounding rectangle of the T-shirt canvas
+                    const tshirtRect = tshirt.getBoundingClientRect();
+
+                    // Calculate the position relative to the T-shirt canvas
+                    const offsetX = event.clientX - tshirtRect.left;
+                    const offsetY = event.clientY - tshirtRect.top;
+
+                    // Clone the original design and append it to the design container
+                    const newDesign = selectedDesign.cloneNode(true);
+                    newDesign.classList.remove('design');
+                    designContainer.appendChild(newDesign);
+
+                    // Update the position of the new design element
+                    newDesign.style.position = 'absolute';
+                    newDesign.style.left = offsetX - newDesign.width / 2 + 'px';
+                    newDesign.style.top = offsetY - newDesign.height / 2 + 'px';
+
+                    // Make the new design resizable and draggable only after dropping
+                    makeDesignResizable(newDesign);
+                    makeDesignDraggable(newDesign);
+
+                    selectedDesign = null;
+                }
+            });
+
+            function makeDesignResizable(element) {
+                interact(element).resizable({
+                    edges: { left: true, right: true, top: true, bottom: true },
+                    listeners: {
+                        move(event) {
+                            const target = event.target;
+
+                            // Resize the element
+                            target.style.width = event.rect.width + 'px';
+                            target.style.height = event.rect.height + 'px';
+                        }
+                    }
+                })
+                    .on('resizemove', function (event) {
+                        const target = event.target;
+
+                        // Check if the target is the clone, and prevent default action if true
+                        if (event.rect.width !== event.deltaRect.width || event.rect.height !== event.deltaRect.height) {
+                            event.preventDefault();
+                        }
+                    });
+            }
+
+            function makeDesignDraggable(element) {
+                interact(element).draggable({
+                    listeners: {
+                        move(event) {
+                            const target = event.target;
+
+                            // Translate the element
+                            target.style.webkitTransform = target.style.transform = 'translate(' + event.dx + 'px, ' + event.dy + 'px)';
+                        }
+                    }
+                })
+                    .on('dragmove', function (event) {
+                        const target = event.target;
+
+                        // Check if the target is the clone, and prevent default action if true
+                        if (event.rect.width !== event.deltaRect.width || event.rect.height !== event.deltaRect.height) {
+                            event.preventDefault();
+                        }
+                    });
+            }
+        });
+    </script>
+
+</body>
+</html>
